@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import os
 import sys
 import subprocess
@@ -292,7 +292,7 @@ def dump_revision(mw_filename, md_filename, text, title):
     folder, local_filename = os.path.split(md_filename)
     child = subprocess.Popen([pandoc,
                               "-f", "mediawiki",
-                              "-t", "markdown_github-hard_line_breaks",
+                              "-t", "gfm-hard_line_breaks",
                               mw_filename],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
