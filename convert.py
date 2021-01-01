@@ -8,18 +8,18 @@ import gzip
 import re
 from xml.etree import cElementTree as ElementTree
 
-prefix = "wiki/"
+prefix = "docs/"
 mediawiki_ext = "mediawiki"
 markdown_ext = "md"
 user_table = "usernames.txt"
 user_blacklist = "user_blocklist.txt"
 default_email = "anonymous.contributor@example.org"
-base_url = "http://www.open-bio.org/"  # Used for images etc; prefix is appended to this!
+base_url = "http://doc.tidalcycles.org/"  # Used for images etc; prefix is appended to this!
 base_image_url = base_url + "w/images/"  # Used for images
 page_prefixes_to_ignore = [
     "Help:", "MediaWiki:", "Talk:", "User:", "User talk:"
 ]  # Beware spaces vs _
-default_layout = "wiki"  # Can also use None; note get tagpage for category listings
+default_layout = None  # Can also use None; note get tagpage for category listings
 git = "git"  # assume on path
 pandoc = "pandoc"  # assume on path
 
@@ -160,7 +160,9 @@ def cleanup_mediawiki(text):
     #
     new = []
     categories = []
-    languages = ["python", "perl", "sql", "bash", "ruby", "java", "xml"]
+    languages = [
+        "python", "perl", "sql", "bash", "ruby", "java", "xml", "haskell"
+    ]
     for line in text.split("\n"):
         # line is already unicode
         line = line.replace(b"\xe2\x80\x8e".decode("utf-8"),
