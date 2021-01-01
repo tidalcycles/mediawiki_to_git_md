@@ -300,6 +300,8 @@ def dump_revision(mw_filename, md_filename, text, title):
 
     if text.strip().startswith("#REDIRECT [[") and text.strip().endswith("]]"):
         redirect = text.strip()[12:-2]
+        print("Ignore redirection to %s" % redirect)
+        return True
         if "\n" not in redirect and "]" not in redirect:
             # Maybe I should just have written a regular expression?
             with open(mw_filename, "w") as handle:
