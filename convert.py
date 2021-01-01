@@ -8,18 +8,20 @@ import gzip
 import re
 from xml.etree import cElementTree as ElementTree
 
-prefix = "docs/"
-mediawiki_ext = "mediawiki"
+prefix = "docs-md/"
 mediawiki_prefix = "docs-mediawiki/"  # mediawiki files can be stored in a
                                       # separate directory for validating.
 markdown_ext = "md"
+mediawiki_ext = "mediawiki"
 user_table = "usernames.txt"
 user_blacklist = "user_blocklist.txt"
 default_email = "anonymous.contributor@example.org"
+default_locale = "en"
+valid_locales = ["en", "de", "en-gb", "es", "fr", "hi", "ja", "zh", "zh-hant", "zh-tw"]
 base_url = "http://doc.tidalcycles.org/"  # Used for images etc; prefix is appended to this!
 base_image_url = base_url + "w/images/"  # Used for images
 page_prefixes_to_ignore = [
-    "Help:", "MediaWiki:", "Talk:", "User:", "User talk:"
+        "Help:", "MediaWiki:", "Talk:", "User:", "User talk:", "Translations:"
 ]  # Beware spaces vs _
 default_layout = None  # Can also use None; note get tagpage for category listings
 git = "git"  # assume on path
@@ -308,9 +310,10 @@ def dump_revision(mw_filename, md_filename, text, title):
 
     if text.strip().startswith("#REDIRECT [[") and text.strip().endswith("]]"):
         redirect = text.strip()[12:-2]
-        print("Ignore redirection to %s" % redirect)
-        return True
         if "\n" not in redirect and "]" not in redirect:
+            print("Ignore redirection to %s" % redirect)
+            return False
+
             # Maybe I should just have written a regular expression?
             with open(mw_filename, "w") as handle:
                 handle.write(original)
@@ -538,6 +541,10 @@ def commit_file(title, filename, date, username, contents, comment):
     #commit_files([filename], username, date, comment)
 
 
+def ends_with_locale(title):
+    return any(title.endswith('/%s' % locale) for locale in valid_locales)
+
+
 if sys.platform != "linux2":
     #print("=" * 60)
     #print("Checking for potential name clashes")
@@ -577,20 +584,37 @@ for title, filename, date, username, text, comment in c.execute(
     if ignore_by_prefix(title):
         # Not interesting, ignore
         continue
-    if title.startswith("File:"):
+    if "File:" in title:
         # Example Title File:Wininst.png
         # TODO - capture the preferred filename from the XML!
         commit_file(title, filename, date, username, text, comment)
         continue
-    if title.startswith("Template:"):
+    if "Template:" in title:
         # Can't handle these properly (yet)
         continue
     # if title.startswith("Category:"):
     #     # TODO - may need to insert some Jekyll template magic?
     #     # See https://github.com/peterjc/mediawiki_to_git_md/issues/6
     assert filename is None
-    md_filename = make_filename(title, markdown_ext)
-    mw_filename = make_filename(title, mediawiki_ext, dir_prefix=mediawiki_prefix)
+
+    md_prefix = prefix
+    mw_prefix = mediawiki_prefix
+
+    # Handle translated pages (they have a suffix '/{locale}' in the title)
+    original_title = title
+    if ends_with_locale(title):
+        title_parts = title.split('/')
+        locale = title_parts[-1]
+        title = '/'.join(title_parts[:-1])
+    else:
+        locale = default_locale
+
+    # Store entries under locale subdirectories
+    md_prefix = os.path.join(md_prefix, locale)
+    mw_prefix = os.path.join(mw_prefix, locale)
+
+    md_filename = make_filename(title, markdown_ext, dir_prefix=md_prefix)
+    mw_filename = make_filename(title, mediawiki_ext, dir_prefix=mw_prefix)
     print(("Converting %s as of revision %s by %s" %
            (md_filename, date, username)))
     if dump_revision(mw_filename, md_filename, text, title):
