@@ -10,6 +10,8 @@ from xml.etree import cElementTree as ElementTree
 
 prefix = "docs/"
 mediawiki_ext = "mediawiki"
+mediawiki_prefix = "docs-mediawiki/"  # mediawiki files can be stored in a
+                                      # separate directory for validating.
 markdown_ext = "md"
 user_table = "usernames.txt"
 user_blacklist = "user_blocklist.txt"
@@ -269,7 +271,7 @@ def make_url(title):
     return os.path.join(prefix, title.replace(" ", "_") + "/")
 
 
-def make_filename(title, ext):
+def make_filename(title, ext, dir_prefix=None):
     """Spaces/colons/slahses to underscores; adds extension given.
 
     Want to avoid colons in filenames for Windows, fix the URL via
@@ -279,8 +281,10 @@ def make_filename(title, ext):
     with automatic links when there are child-folders. Again we
     get the desired URL via the YAML header permalink entry.
     """
+    if not dir_prefix:
+        dir_prefix = prefix
     return os.path.join(
-        prefix,
+        dir_prefix,
         title.replace(" ", "_").replace(":", "_").replace("/", "_") +
         os.path.extsep + ext)
 
@@ -297,6 +301,10 @@ def dump_revision(mw_filename, md_filename, text, title):
     folder, local_filename = os.path.split(mw_filename)
     original = text
     text, categories = cleanup_mediawiki(text)
+
+    # Make sure output directories exist
+    os.makedirs(os.path.dirname(mw_filename), exist_ok=True)
+    os.makedirs(os.path.dirname(md_filename), exist_ok=True)
 
     if text.strip().startswith("#REDIRECT [[") and text.strip().endswith("]]"):
         redirect = text.strip()[12:-2]
@@ -582,7 +590,7 @@ for title, filename, date, username, text, comment in c.execute(
     #     # See https://github.com/peterjc/mediawiki_to_git_md/issues/6
     assert filename is None
     md_filename = make_filename(title, markdown_ext)
-    mw_filename = make_filename(title, mediawiki_ext)
+    mw_filename = make_filename(title, mediawiki_ext, dir_prefix=mediawiki_prefix)
     print(("Converting %s as of revision %s by %s" %
            (md_filename, date, username)))
     if dump_revision(mw_filename, md_filename, text, title):
