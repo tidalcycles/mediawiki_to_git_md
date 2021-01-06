@@ -10,18 +10,20 @@ from xml.etree import cElementTree as ElementTree
 
 prefix = "docs-md/"
 mediawiki_prefix = "docs-mediawiki/"  # mediawiki files can be stored in a
-                                      # separate directory for validating.
+# separate directory for validating.
 markdown_ext = "md"
 mediawiki_ext = "mediawiki"
 user_table = "usernames.txt"
 user_blacklist = "user_blocklist.txt"
 default_email = "anonymous.contributor@example.org"
 default_locale = "en"
-valid_locales = ["en", "de", "en-gb", "es", "fr", "hi", "ja", "zh", "zh-hant", "zh-tw"]
+valid_locales = [
+    "en", "de", "en-gb", "es", "fr", "hi", "ja", "zh", "zh-hant", "zh-tw"
+]
 base_url = "http://doc.tidalcycles.org/"  # Used for images etc; prefix is appended to this!
 base_image_url = base_url + "w/images/"  # Used for images
 page_prefixes_to_ignore = [
-        "Help:", "MediaWiki:", "Talk:", "User:", "User talk:", "Translations:"
+    "Help:", "MediaWiki:", "Talk:", "User:", "User talk:", "Translations:"
 ]  # Beware spaces vs _
 default_layout = None  # Can also use None; note get tagpage for category listings
 git = "git"  # assume on path
@@ -320,15 +322,12 @@ def dump_revision(mw_filename, md_filename, text, title):
             with open(md_filename, "w") as handle:
                 handle.write("---\n")
                 handle.write("title: %s\n" % title)
-                handle.write("permalink: %s\n" %
-                             make_url(title))
-                handle.write("redirect_to: /%s\n" %
-                             make_url(redirect))
+                handle.write("permalink: %s\n" % make_url(title))
+                handle.write("redirect_to: /%s\n" % make_url(redirect))
                 handle.write("---\n\n")
                 handle.write(
                     "You should automatically be redirected to [%s](/%s)\n" %
-                    (redirect,
-                     make_url(redirect)))
+                    (redirect, make_url(redirect)))
             print(("Setup redirection %s --> %s" % (title, redirect)))
             return True
 
@@ -607,16 +606,23 @@ for title, filename, date, username, text, comment in c.execute(
         locale = title_parts[-1]
         title = '/'.join(title_parts[:-1])
     else:
-        locale = default_locale
+        locale = ''
 
     # Store entries under locale subdirectories
     md_prefix = os.path.join(md_prefix, locale)
     mw_prefix = os.path.join(mw_prefix, locale)
 
+    # Put revisions with "Function" category in ref/ dir
+    _, categories = cleanup_mediawiki(text)
+    if any("Function" in c for c in categories):
+        md_prefix = os.path.join(md_prefix, "ref")
+        mw_prefix = os.path.join(mw_prefix, "ref")
+
     md_filename = make_filename(title, markdown_ext, dir_prefix=md_prefix)
     mw_filename = make_filename(title, mediawiki_ext, dir_prefix=mw_prefix)
     print(("Converting %s as of revision %s by %s" %
            (md_filename, date, username)))
+
     if dump_revision(mw_filename, md_filename, text, title):
         commit_revision(mw_filename, md_filename, username, date, comment)
     else:
